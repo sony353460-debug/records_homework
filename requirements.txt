@@ -1,0 +1,8 @@
+# Discord Bot 函式庫
+py-cord
+
+# PostgreSQL 資料庫連線函式庫 (用於 psycopg2.connect)
+psycopg2-binary
+
+# 處理環境變數 (讀取 .env 檔案)
+python-dotenv
