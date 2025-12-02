@@ -1,5 +1,5 @@
-# 只安裝 py-cord 核心，忽略語音相關的依賴項
-py-cord[speed]
+# Discord Bot 函式庫
+py-cord
 
 # PostgreSQL 資料庫連線函式庫 (用於 psycopg2.connect)
 psycopg2-binary
