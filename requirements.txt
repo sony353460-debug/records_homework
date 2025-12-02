@@ -6,3 +6,6 @@ psycopg2-binary
 
 # 處理環境變數 (讀取 .env 檔案)
 python-dotenv
+
+# 添加標準的 Discord 語音依賴
+PyNaCl
