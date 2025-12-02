@@ -1,0 +1,6 @@
+# 忽略資料庫檔案
+records.db
+# 忽略 Python 編譯暫存資料夾
+__pycache__/
+# 忽略.env
+/.env
