@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv #用來讀取env檔裡的內容
 import discord
-from discord.commands import slash_command 
-from discord.commands import Option
+from discord.commands import slash_command #斜線指令套件
+from discord.commands import Option #選單套件
 from discord import Embed
 from database import recordDB
 import datetime
@@ -18,21 +18,25 @@ bot=discord.Bot(intents=discord.Intents.all())
 @bot.event#定義事件
 async def on_ready():#定義為On_ready
     print(f"{bot.user} IS ON")
-#機器人(練習)
-@bot.event
-async def on_message(message):#定義
-    if message.author==bot.user:#偵測到的訊息來源等於機器人本身則跳出，避免bug
-        return
-    if message.content=="hellow":#偵測訊息內容是否符合
-        await message.channel.send("hi")
-    if message.content.startswith("測試"):#偵測內容開頭是否符合
-        await message.channel.send("測試成功")
-#機器人(練習)
-@bot.event
-async def on_member_join(member):
-    channel_id=1442521104315846838
-    welcome_channel=bot.get(channel_id)
-    await welcome_channel.send(f"歡迎{member.mention}加入伺服器")
+
+
+#登入系統
+@bot.slash_command(name="登入",description="輸入使用者密碼，初次使用則設定密碼")
+async def login(ctx,password):
+    user_id=str(ctx.author.id)
+    user_data=db.get_user(user_id)
+    if user_data==None:
+        status=db.add_user(user_id,password)
+        if status==True:
+            await ctx.respond("成功新增帳戶")
+        else:
+            await ctx.respond("新增帳戶失敗")
+    else:
+        if user_data[0]==password:
+            await ctx.respond("登入成功")
+        else:
+            await ctx.respond("密碼錯誤")
+
 #新增消費功能
 @bot.slash_command(name="新增",description="新增消費")
 async def add_cost(ctx,item,amount,type: Option(str, "選擇收支類型", choices=["收入", "支出"])):#我也不知道為甚麼會有黃色波浪號，但能跑就行
@@ -67,3 +71,29 @@ async def edit_record(ctx,id,item,amount):
 #生成消費分析圖表
 
 bot.run(os.environ.get("DISCORD_TOKEN"))
+
+
+
+
+
+
+
+
+
+
+
+# #機器人(練習)
+# @bot.event
+# async def on_message(message):#定義
+#     if message.author==bot.user:#偵測到的訊息來源等於機器人本身則跳出，避免bug
+#         return
+#     if message.content=="hellow":#偵測訊息內容是否符合
+#         await message.channel.send("hi")
+#     if message.content.startswith("測試"):#偵測內容開頭是否符合
+#         await message.channel.send("測試成功")
+# #機器人(練習)
+# @bot.event
+# async def on_member_join(member):
+#     channel_id=1442521104315846838
+#     welcome_channel=bot.get(channel_id)
+#     await welcome_channel.send(f"歡迎{member.mention}加入伺服器")
