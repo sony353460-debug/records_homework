@@ -8,7 +8,7 @@ from discord import Embed
 from discord.ui import View #這邊只用到View
 #將我寫的其他檔案導入
 from database import recordDB #資料庫程式
-from modals import add_record_modal #選單的各項功能(正在做)
+from modals import add_record_modal ,search_records_embed #選單的各項功能(正在做)
 import datetime
 from datetime import date
 # import matplotlib.pyplot as plt
@@ -30,8 +30,6 @@ async def on_ready():#定義為On_ready
 #登入系統
 @bot.slash_command(name="登入",description="輸入使用者密碼，初次使用則設定密碼")
 async def login(ctx,password):
-
-    await ctx.defer(ephemeral=False)
 
     user_id=str(ctx.author.id)
     user_data=db.get_user(user_id)
@@ -91,16 +89,18 @@ class menu(discord.ui.View):
         if custom_id=="action_add":
             await interaction.response.send_modal(add_record_modal(parent_view=self))
         elif custom_id=="action_search":
-            await interaction.response.send_modal(search_records_modal(title="查詢記帳記錄", parent_view=self))
+            embed=search_records_embed(parent_view=self).get_embed()
+            await interaction.response.send_message(embed=embed)
+            
         elif custom_id=="action_edit":
-            await interaction.response.send_modal(edit_record_modal(title="修改記帳記錄", parent_view=self))
+            await interaction.followup.send(edit_record_modal(title="修改記帳記錄", parent_view=self))
         elif custom_id=="action_delete":
-            await interaction.response.send_modal(delete_record_modal(title="刪除記帳記錄", parent_view=self))
+            await interaction.followup.send(delete_record_modal(title="刪除記帳記錄", parent_view=self))
         elif custom_id=="action_analyze":
-            await interaction.response.send_message("圖表分析功能即將推出...", ephemeral=True)
+            await interaction.followup.send("圖表分析功能即將推出...", ephemeral=True)
         elif custom_id=="action_signout":
             logged_in_users[self.user_id]=False
-            await interaction.response.edit_message(content="**✅ 成功登出！** 請使用 `/登入` 再次操作。", view=None)
+            await interaction.followup.edit_message(content="**✅ 成功登出！** 請使用 `/登入` 再次操作。", view=None)
 
 '''
 # 🎯 新增 Modal (AddRecordModal)

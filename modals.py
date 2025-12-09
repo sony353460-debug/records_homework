@@ -11,6 +11,9 @@ from datetime import date
 
 db=recordDB()
 
+#/////////////////////////////////////////////////////////////////////////
+#新增
+#/////////////////////////////////////////////////////////////////////////
 class add_record_modal(Modal):
     #這得*args跟**kwargs是為了將資料完整傳給父類別
     def __init__(self, parent_view, *args, **kwargs):
@@ -42,19 +45,15 @@ class add_record_modal(Modal):
         self.add_item(self.amount_input)
         self.add_item(self.type_input)
 
-
-
-
-########目前要修的城市，輸入資料按完確定後這邊沒反應
+    #這邊注意py-cord是用callback，discord.py才是用on_submit
     async def callback(self,interaction:discord.Interaction):
-        print("!!!!!")
         #判斷輸入資料是否符合條件，並紀錄資料
         try:
             item=str(self.item_input.value)
             amount=int(self.amount_input.value)
             type=str(self.type_input.value)
             if type not in ["收入","支出"]:
-                await interaction.response.send_message("輸入的類型錯誤",ephemeral=False)
+                await interaction.followup.send("輸入的類型錯誤",ephemeral=False)
                 
                 
             # ✅ 修正 1：從 parent_view 獲取登入使用者的 user_id
@@ -65,9 +64,35 @@ class add_record_modal(Modal):
             today = datetime.date.today()
 
             db.add_record(user_id,today,item,amount,type)
-            await interaction.response.send_message("已計入帳本",ephemeral=False)
+            await interaction.followup.send("已計入帳本",ephemeral=False)
         #出現數值錯誤
         except ValueError:
-            await interaction.response.send_message("請輸入有效數字",ephemeral=False)
+            await interaction.followup.send("請輸入有效數字",ephemeral=False)
         except Exception as e:
-            await interaction.response.send_message(f"發生錯誤：{e}",ephemeral=False)
+            await interaction.followup.send(f"發生錯誤：{e}",ephemeral=False)
+
+#/////////////////////////////////////////////////////////////////////////
+#查詢
+#/////////////////////////////////////////////////////////////////////////
+class search_records_embed():
+    def __init__(self,parent_view):
+        self.parent_view=parent_view
+    def get_embed(self):
+        user_id=self.parent_view.user_id
+        rows=db.search_records(user_id)
+        # 表頭
+        embed = Embed(title="📒 記帳紀錄")
+
+        for r in rows:
+            id, user_id, today, item, amount, category = r
+            embed.add_field(
+                name=f"ID: {id}",
+                value=f"📅 {today}\n📌 {item}\n💵 {amount}\n🔖 {category}",
+                inline=False
+            )
+        print("!!!")
+        return embed
+        # await interaction.response.send_message(embed=embed)   # 用 code block 固定寬度
+
+
+
