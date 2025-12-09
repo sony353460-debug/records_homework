@@ -5,10 +5,10 @@ import discord
 from discord.commands import slash_command #斜線指令套件
 from discord.commands import Option #選單套件
 from discord import Embed
-from discord.ui import View #這邊只用到View
+from discord.ui import View,Button #這邊只用到View
 #將我寫的其他檔案導入
 from database import recordDB #資料庫程式
-from modals import add_record_modal ,search_records_embed #選單的各項功能(正在做)
+from modals import add_record_modal ,search_records_embed ,edit_record_modal #選單的各項功能(正在做)
 import datetime
 from datetime import date
 # import matplotlib.pyplot as plt
@@ -23,43 +23,96 @@ bot=discord.Bot(intents=discord.Intents.all())
 @bot.event#定義事件
 async def on_ready():#定義為On_ready
     print(f"{bot.user} IS ON")
-    #處理 View 註冊和重複添加檢查
-    bot.add_view(menu(user_id=None))
+    
 
 
 #登入系統
 @bot.slash_command(name="登入",description="輸入使用者密碼，初次使用則設定密碼")
 async def login(ctx,password):
-
     user_id=str(ctx.author.id)
     user_data=db.get_user(user_id)
 
     print(logged_in_users)
 
     if logged_in_users.get(user_id)==True:
-        await ctx.followup.send("已登入，按下按鈕選擇功能",view=menu(user_id),ephemeral=False)
-        return
+        message="已登入，按下按鈕選擇功能"
     else:
-        print(logged_in_users)
         if user_data==None:
             status=db.add_user(user_id,password)
             if status==True:
                 logged_in_users[user_id]=True
-                await ctx.followup.send("成功新增帳戶",view=menu(user_id),ephemeral=False)
-                return
+                message="成功新增帳戶"
             else:
-                await ctx.followup.send("新增帳戶失敗",ephemeral=True)
+                await ctx.respond("新增帳戶失敗",ephemeral=True)
                 return
         else:
             if user_data[0]==password:
                 logged_in_users[user_id]=True
-                print(logged_in_users)
-                await ctx.followup.send("登入成功",view=menu(user_id),ephemeral=False)
-                return
+                message="登入成功"
             else:
-                await ctx.followup.send("密碼錯誤",ephemeral=True)
+                await ctx.respond("密碼錯誤",ephemeral=True)
                 return
+    await ctx.respond(message,view=menu(user_id),ephemeral=False)         
+    
 
+
+class menu(discord.ui.View):
+    def __init__(self, user_id):
+        super().__init__(timeout=180)
+        self.user_id = str(user_id)
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if str(interaction.user.id) != self.user_id:
+            await interaction.response.send_message("你不能操作別人的選單。", ephemeral=True)
+            return False
+        return True
+
+    # ---------------- Buttons ----------------
+    @discord.ui.button(label="新增紀錄", custom_id="action_add", style=discord.ButtonStyle.green, row=0)
+    async def add_record(self, button, interaction):
+        await interaction.response.send_modal(add_record_modal(parent_view=self))
+        
+    @discord.ui.button(label="查詢紀錄", custom_id="action_search", style=discord.ButtonStyle.grey, row=0)
+    async def search_record(self, button, interaction):
+        embed = search_records_embed(parent_view=self).get_embed()
+        await interaction.response.edit_message(content="查詢紀錄",embed=embed,view=BackView(self))
+
+    @discord.ui.button(label="修改紀錄", custom_id="action_edit", style=discord.ButtonStyle.blurple, row=0)
+    async def edit_record(self, button, interaction):
+        await interaction.response.send_modal(edit_record_modal(parent_view=self))
+
+
+    @discord.ui.button(label="刪除紀錄", custom_id="action_delete", style=discord.ButtonStyle.red, row=1)
+    async def delete_record(self, button, interaction):
+        await interaction.response.send_message(content="刪除功能待加入",view=BackView(self))
+
+    @discord.ui.button(label="圖表分析", custom_id="action_analyze", style=discord.ButtonStyle.green, row=1)
+    async def analyze(self, button, interaction):
+        await interaction.response.send_message(content="圖表分析功能即將推出...",view=BackView(self))
+
+    @discord.ui.button(label="登出系統", custom_id="action_signout", style=discord.ButtonStyle.green, row=1)
+    async def logout(self, button, interaction):
+        logged_in_users[self.user_id] = False
+        await interaction.response.edit_message(content="已登出", view=None)
+
+    
+
+#返回選單的按鈕
+class BackView(discord.ui.View):
+    def __init__(self, parent_view: discord.ui.View):
+        super().__init__(timeout=180)
+        print(parent_view)
+        self.parent_view = parent_view
+        
+
+    @discord.ui.button(label="返回主選單", style=discord.ButtonStyle.primary)
+    async def back(self, button: discord.ui.Button, interaction: discord.Interaction):
+        await interaction.response.edit_message(content="主選單：",embed=None,view=self.parent_view)       # ← 回到原本選單
+
+
+
+
+'''
 #登入後的選單
 class menu(discord.ui.View):
     def __init__(self,user_id=None):
@@ -80,7 +133,8 @@ class menu(discord.ui.View):
     #當按鈕被按下
     async def interaction_check(self,interaction:discord.Interaction):
         custom_id=interaction.data["custom_id"]
-        print("checkpoint")
+        print(logged_in_users)
+        print(str(interaction.user.id),self.user_id)
         # 🎯 檢查操作者是否為本人
         if str(interaction.user.id) != self.user_id:
             await interaction.response.send_message("你不能操作別人的選單。", ephemeral=True)
@@ -90,10 +144,9 @@ class menu(discord.ui.View):
             await interaction.response.send_modal(add_record_modal(parent_view=self))
         elif custom_id=="action_search":
             embed=search_records_embed(parent_view=self).get_embed()
-            await interaction.response.send_message(embed=embed)
-            
+            await interaction.response.send_message(content="查詢結果：",embed=embed,view=BackView(parent_view=self),ephemeral=False)  # ← 清除原本按鈕，提供返回鍵
         elif custom_id=="action_edit":
-            await interaction.followup.send(edit_record_modal(title="修改記帳記錄", parent_view=self))
+            await interaction.response.send_modal(edit_record_modal(parent_view=self))
         elif custom_id=="action_delete":
             await interaction.followup.send(delete_record_modal(title="刪除記帳記錄", parent_view=self))
         elif custom_id=="action_analyze":
@@ -102,86 +155,16 @@ class menu(discord.ui.View):
             logged_in_users[self.user_id]=False
             await interaction.followup.edit_message(content="**✅ 成功登出！** 請使用 `/登入` 再次操作。", view=None)
 
-'''
-# 🎯 新增 Modal (AddRecordModal)
-class AddRecordModal(Modal):
-    def __init__(self, parent_view, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.parent_view = parent_view 
-        self.add_item(InputText(label="項目名稱", placeholder="例如：晚餐、薪水"))
-        self.add_item(InputText(label="金額 (數字)", placeholder="例如：500、-200"))
-        self.add_item(InputText(label="類型 (收入/支出)", placeholder="輸入 收入 或 支出"))
-
-    async def callback(self, interaction: discord.Interaction):
-        item = self.children[0].value
-        amount_str = self.children[1].value
-        record_type = self.children[2].value
-        user_id = self.parent_view.user_id # 從 View 獲取 user_id
-
-        try:
-            amount = int(amount_str)
-        except ValueError:
-            await interaction.response.send_message("金額必須是數字。", ephemeral=True)
-            return
-        
-        if record_type not in ["收入", "支出"]:
-            await interaction.response.send_message("類型必須是 '收入' 或 '支出'。", ephemeral=True)
-            return
-
-        today = datetime.date.today()
-        db.add_record(user_id, today, item, amount, record_type)
-        
-        await interaction.response.send_message(f"✅ 成功新增紀錄：{record_type} {item}，金額 {amount}。", ephemeral=True)
-
-# 🎯 新增 Modal (EditRecordModal)
-class EditRecordModal(Modal):
-    def __init__(self, parent_view, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+#返回選單的按鈕
+class BackView(discord.ui.View):
+    def __init__(self, parent_view: discord.ui.View):
+        super().__init__(timeout=None)
         self.parent_view = parent_view
-        self.add_item(InputText(label="記錄 ID", placeholder="輸入要修改的記錄 ID"))
-        self.add_item(InputText(label="新項目名稱", placeholder="例如：新的咖啡"))
-        self.add_item(InputText(label="新金額 (數字)", placeholder="例如：-100"))
 
-    async def callback(self, interaction: discord.Interaction):
-        record_id_str = self.children[0].value
-        item = self.children[1].value
-        amount_str = self.children[2].value
-        user_id = self.parent_view.user_id
-
-        try:
-            record_id = int(record_id_str)
-            amount = int(amount_str)
-        except ValueError:
-            await interaction.response.send_message("ID 和金額必須是數字。", ephemeral=True)
-            return
-
-        db.edit_record(record_id, user_id, item, amount) 
-        
-        await interaction.response.send_message(f"✅ 已嘗試修改 ID {record_id} 的記錄為：{item}, {amount}。", ephemeral=True)
-
-# 🎯 新增 Modal (DeleteRecordModal)
-class DeleteRecordModal(Modal):
-    def __init__(self, parent_view, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.parent_view = parent_view
-        self.add_item(InputText(label="記錄 ID", placeholder="輸入要刪除的記錄 ID"))
-
-    async def callback(self, interaction: discord.Interaction):
-        record_id_str = self.children[0].value
-        user_id = self.parent_view.user_id
-        
-        try:
-            record_id = int(record_id_str)
-        except ValueError:
-            await interaction.response.send_message("ID 必須是數字。", ephemeral=True)
-            return
-
-        # 🎯 確保 db.delete_record 接受兩個參數 (id, user_id) 進行驗證
-        db.delete_record(record_id, user_id) 
-        
-        await interaction.response.send_message(f"✅ 已嘗試刪除 ID {record_id} 的記錄。", ephemeral=True)
+    @discord.ui.button(label="返回主選單", style=discord.ButtonStyle.primary)
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="主選單：",view=self.parent_view)       # ← 回到原本選單
 '''
-
 
 bot.run(os.environ.get("DISCORD_TOKEN"))
 

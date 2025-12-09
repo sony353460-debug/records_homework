@@ -19,7 +19,6 @@ class add_record_modal(Modal):
     def __init__(self, parent_view, *args, **kwargs):
         super().__init__(*args, **kwargs, title="新增消費紀錄")
         self.parent_view=parent_view
-
         # 這是輸入「項目」的欄位
         self.item_input=InputText(
             label="項目名稱 ",
@@ -47,6 +46,7 @@ class add_record_modal(Modal):
 
     #這邊注意py-cord是用callback，discord.py才是用on_submit
     async def callback(self,interaction:discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
         #判斷輸入資料是否符合條件，並紀錄資料
         try:
             item=str(self.item_input.value)
@@ -56,7 +56,7 @@ class add_record_modal(Modal):
                 await interaction.followup.send("輸入的類型錯誤",ephemeral=False)
                 
                 
-            # ✅ 修正 1：從 parent_view 獲取登入使用者的 user_id
+            # 從 parent_view 獲取登入使用者的 user_id
             user_id = self.parent_view.user_id 
             if user_id is None:
                 user_id = str(interaction.user.id)
@@ -65,7 +65,6 @@ class add_record_modal(Modal):
 
             db.add_record(user_id,today,item,amount,type)
             await interaction.followup.send("已計入帳本",ephemeral=False)
-        #出現數值錯誤
         except ValueError:
             await interaction.followup.send("請輸入有效數字",ephemeral=False)
         except Exception as e:
@@ -90,9 +89,61 @@ class search_records_embed():
                 value=f"📅 {today}\n📌 {item}\n💵 {amount}\n🔖 {category}",
                 inline=False
             )
-        print("!!!")
         return embed
-        # await interaction.response.send_message(embed=embed)   # 用 code block 固定寬度
 
+#/////////////////////////////////////////////////////////////////////////
+#修改
+#/////////////////////////////////////////////////////////////////////////
+class edit_record_modal(Modal):
+    def __init__(self, parent_view, *args, **kwargs):
+        super().__init__(*args, **kwargs, title="修改消費紀錄")
+        self.parent_view=parent_view
+        # 這是輸入要修改的id
+        self.id_input=InputText(
+            label="id ",
+            placeholder='例如：1,2,...,100',
+            max_length=50,
+            required=True
+        )
+        # 這是輸入「項目」的欄位
+        self.item_input=InputText(
+            label="項目名稱 ",
+            placeholder='例如：午餐、薪水',
+            max_length=50,
+            required=True
+        )
+        # 這是輸入「金額」的欄位
+        self.amount_input = InputText(
+            label='金額 (請輸入數字)',
+            placeholder='例如：100',
+            required=True
+        )
+        # 這是選擇「收支類型」的欄位
+        self.type_input = InputText(
+            label='收支類型',
+            placeholder='輸入：收入 或 支出',
+            required=True,
+            max_length=2
+        )
+        #將上面的輸入框用add_item放上
+        self.add_item(self.id_input)
+        self.add_item(self.item_input)
+        self.add_item(self.amount_input)
+        self.add_item(self.type_input)
+    async def callback(self,interaction:discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        try:
+            id=self.id_input.value
+            user_id=self.parent_view
+            item=self.item_input.value
+            amount=self.amount_input.value
+            type=self.type_input.value
+
+            db.edit_record(id,user_id,item,amount,type)
+            await interaction.response.send_message(f"已修改第{id}筆記錄")
+        except ValueError:
+            await interaction.followup.send("請輸入有效數字",ephemeral=False)
+        except Exception as e:
+            await interaction.followup.send(f"發生錯誤：{e}",ephemeral=False)
 
 
