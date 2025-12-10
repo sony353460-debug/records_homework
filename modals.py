@@ -100,7 +100,7 @@ class edit_record_modal(Modal):
         self.parent_view=parent_view
         # 這是輸入要修改的id
         self.id_input=InputText(
-            label="id ",
+            label="第＿筆記錄 ",
             placeholder='例如：1,2,...,100',
             max_length=50,
             required=True
@@ -145,5 +145,35 @@ class edit_record_modal(Modal):
             await interaction.followup.send("請輸入有效數字",ephemeral=False)
         except Exception as e:
             await interaction.followup.send(f"發生錯誤：{e}",ephemeral=False)
+
+#/////////////////////////////////////////////////////////////////////////
+#刪除
+#/////////////////////////////////////////////////////////////////////////
+class delete_record_modal(Modal):
+    def __init__(self, parent_view, *args, **kwargs):
+        super().__init__(*args, **kwargs, title="刪除消費紀錄")
+        self.parent_view=parent_view
+        # 這是輸入要刪除的id
+        self.id_input=InputText(
+            label="第＿筆紀錄",
+            placeholder='例如：1,2,...,100',
+            max_length=50,
+            required=True
+        )
+        #將上面的輸入框用add_item放上
+        self.add_item(self.id_input)
+
+    async def callback(self,interaction:discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        try:
+            id=self.id_input.value
+            db.delete_record(id)
+            await interaction.followup.send(f"已修改第{id}筆記錄")
+        except ValueError:
+            await interaction.followup.send("請輸入有效數字",ephemeral=False)
+        except Exception as e:
+            await interaction.followup.send(f"發生錯誤：{e}",ephemeral=False)
+
+
 
 

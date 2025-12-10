@@ -5,10 +5,10 @@ import discord
 from discord.commands import slash_command #斜線指令套件
 from discord.commands import Option #選單套件
 from discord import Embed
-from discord.ui import View,Button #這邊只用到View
+from discord.ui import View,Button 
 #將我寫的其他檔案導入
 from database import recordDB #資料庫程式
-from modals import add_record_modal ,search_records_embed ,edit_record_modal #選單的各項功能(正在做)
+from modals import add_record_modal ,search_records_embed ,edit_record_modal ,delete_record_modal #選單的各項功能(正在做)
 import datetime
 from datetime import date
 # import matplotlib.pyplot as plt
@@ -68,29 +68,36 @@ class menu(discord.ui.View):
         return True
 
     # ---------------- Buttons ----------------
-    @discord.ui.button(label="新增紀錄", custom_id="action_add", style=discord.ButtonStyle.green, row=0)
+    @discord.ui.button(label="新增紀錄", emoji="📥", custom_id="action_add", style=discord.ButtonStyle.green, row=0)
     async def add_record(self, button, interaction):
         await interaction.response.send_modal(add_record_modal(parent_view=self))
         
-    @discord.ui.button(label="查詢紀錄", custom_id="action_search", style=discord.ButtonStyle.grey, row=0)
+    @discord.ui.button(label="查詢紀錄", emoji="🔍", custom_id="action_search", style=discord.ButtonStyle.grey, row=0)
     async def search_record(self, button, interaction):
         embed = search_records_embed(parent_view=self).get_embed()
         await interaction.response.edit_message(content="查詢紀錄",embed=embed,view=BackView(self))
 
-    @discord.ui.button(label="修改紀錄", custom_id="action_edit", style=discord.ButtonStyle.blurple, row=0)
+    @discord.ui.button(label="修改紀錄", emoji="✏️", custom_id="action_edit", style=discord.ButtonStyle.blurple, row=0)
     async def edit_record(self, button, interaction):
         await interaction.response.send_modal(edit_record_modal(parent_view=self))
 
-
-    @discord.ui.button(label="刪除紀錄", custom_id="action_delete", style=discord.ButtonStyle.red, row=1)
+    @discord.ui.button(label="刪除紀錄", emoji="🗑️", custom_id="action_delete", style=discord.ButtonStyle.red, row=0)
     async def delete_record(self, button, interaction):
-        await interaction.response.send_message(content="刪除功能待加入",view=BackView(self))
+        await interaction.response.send_modal(delete_record_modal(parent_view=self))
 
-    @discord.ui.button(label="圖表分析", custom_id="action_analyze", style=discord.ButtonStyle.green, row=1)
+    @discord.ui.button(label="個人資料", emoji="🪪", custom_id="action_profile", style=discord.ButtonStyle.green, row=1)
+    async def profile(self, button, interaction):
+        await interaction.response.send_message(content="個人資料",view=BackView(self))
+
+    @discord.ui.button(label="圖表分析", emoji="📊", custom_id="action_analyze", style=discord.ButtonStyle.grey, row=1)
     async def analyze(self, button, interaction):
         await interaction.response.send_message(content="圖表分析功能即將推出...",view=BackView(self))
 
-    @discord.ui.button(label="登出系統", custom_id="action_signout", style=discord.ButtonStyle.green, row=1)
+    @discord.ui.button(label="修改個資", emoji="🔐", custom_id="action_password", style=discord.ButtonStyle.blurple, row=1)
+    async def password(self, button, interaction):
+        await interaction.response.send_message(content="修改個資",view=BackView(self))
+
+    @discord.ui.button(label="登出系統", emoji="🚪", custom_id="action_signout", style=discord.ButtonStyle.red, row=1)
     async def logout(self, button, interaction):
         logged_in_users[self.user_id] = False
         await interaction.response.edit_message(content="已登出", view=None)
@@ -104,7 +111,6 @@ class BackView(discord.ui.View):
         print(parent_view)
         self.parent_view = parent_view
         
-
     @discord.ui.button(label="返回主選單", style=discord.ButtonStyle.primary)
     async def back(self, button: discord.ui.Button, interaction: discord.Interaction):
         await interaction.response.edit_message(content="主選單：",embed=None,view=self.parent_view)       # ← 回到原本選單

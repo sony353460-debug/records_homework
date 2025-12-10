@@ -103,14 +103,6 @@ class recordDB:#資料庫的類別
 
 
 
-
-
-
-
-
-
-
-
 # import psycopg2 #postgres的寫法
 # import os
 # from dotenv import load_dotenv
