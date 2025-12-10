@@ -8,7 +8,7 @@ from discord import Embed
 from discord.ui import View,Button 
 #將我寫的其他檔案導入
 from database import recordDB #資料庫程式
-from modals import add_record_modal ,search_records_embed ,edit_record_modal ,delete_record_modal #選單的各項功能(正在做)
+from modals import add_record_modal ,search_records_embed ,edit_record_modal ,delete_record_modal ,profile_embed#選單的各項功能(正在做)
 import datetime
 from datetime import date
 # import matplotlib.pyplot as plt
@@ -87,7 +87,8 @@ class menu(discord.ui.View):
 
     @discord.ui.button(label="個人資料", emoji="🪪", custom_id="action_profile", style=discord.ButtonStyle.green, row=1)
     async def profile(self, button, interaction):
-        await interaction.response.send_message(content="個人資料",view=BackView(self))
+        embed = profile_embed(parent_view=self).get_embed()
+        await interaction.response.edit_message(content="個人資料",embed=embed,view=BackView(self))
 
     @discord.ui.button(label="圖表分析", emoji="📊", custom_id="action_analyze", style=discord.ButtonStyle.grey, row=1)
     async def analyze(self, button, interaction):

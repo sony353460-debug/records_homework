@@ -174,6 +174,32 @@ class delete_record_modal(Modal):
         except Exception as e:
             await interaction.followup.send(f"發生錯誤：{e}",ephemeral=False)
 
+#/////////////////////////////////////////////////////////////////////////
+#個資
+#/////////////////////////////////////////////////////////////////////////
+class profile_embed():
+    def __init__(self,parent_view):
+        self.parent_view=parent_view
+    def get_embed(self):
+        user_id=self.parent_view.user_id
+        profile_data=db.get_profile(user_id)
+        # 表頭
+        embed = Embed(title="🪪 個人資料")
 
+        for r in profile_data:
+            discord_id,password_hash,is_setup = r
+            if is_setup==1:
+                emoji="🟢"
+                is_setup="已註冊"
+            else:
+                emoji="🔴"
+                is_setup="未註冊"
+
+            embed.add_field(
+                name=f"ID: {id}",
+                value=f"👤 {discord_id}\n🔐 {password_hash}\n {emoji} {is_setup}",
+                inline=False
+            )
+        return embed
 
 

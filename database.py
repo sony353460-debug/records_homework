@@ -56,6 +56,15 @@ class recordDB:#資料庫的類別
         conn.close()
         return user_data
 
+    #查詢使用者個人資訊
+    def get_profile(self,discord_id):
+        conn=self.connect()
+        cursor=conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE discord_id=?",(discord_id,))
+        profile_data=cursor.fetchall()
+        conn.close()
+        return profile_data
+
     #新增資料到資料表
     def add_record(self,user_id,today,item,amount,type):
         conn=self.connect()
