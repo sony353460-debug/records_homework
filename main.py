@@ -109,7 +109,6 @@ class menu(discord.ui.View):
 class BackView(discord.ui.View):
     def __init__(self, parent_view: discord.ui.View):
         super().__init__(timeout=180)
-        print(parent_view)
         self.parent_view = parent_view
         
     @discord.ui.button(label="返回主選單", style=discord.ButtonStyle.primary)

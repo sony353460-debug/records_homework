@@ -22,27 +22,39 @@ class add_record_modal(Modal):
         # 這是輸入「項目」的欄位
         self.item_input=InputText(
             label="項目名稱 ",
-            placeholder='例如：午餐、薪水',
+            placeholder="例如：午餐、薪水",
             max_length=50,
-            required=True
+            required=True,
+            row=0
         )
         # 這是輸入「金額」的欄位
         self.amount_input = InputText(
-            label='金額 (請輸入數字)',
-            placeholder='例如：100',
-            required=True
+            label="金額 (請輸入數字)",
+            placeholder="例如：100",
+            required=True,
+            row=1
         )
         # 這是選擇「收支類型」的下拉選單 (這裡用 TextInput 暫代，實際可用 Select)
         self.type_input = InputText(
-            label='收支類型',
-            placeholder='輸入：收入 或 支出',
+            label="收支類型",
+            placeholder="輸入：收入 或 支出",
             required=True,
-            max_length=2
+            max_length=5,
+            row=2
+        )
+        # 這是選擇「詳細類型」的下拉選單 (這裡用 TextInput 暫代，實際可用 Select)
+        self.category_input = InputText(
+            label="詳細類型",
+            placeholder="輸入：食、衣、住、行、育、樂、薪水、額外收入",
+            required=True,
+            max_length=5,
+            row=3
         )
         #將上面的輸入框用add_item放上
         self.add_item(self.item_input)
         self.add_item(self.amount_input)
         self.add_item(self.type_input)
+        self.add_item(self.category_input)
 
     #這邊注意py-cord是用callback，discord.py才是用on_submit
     async def callback(self,interaction:discord.Interaction):
@@ -52,18 +64,21 @@ class add_record_modal(Modal):
             item=str(self.item_input.value)
             amount=int(self.amount_input.value)
             type=str(self.type_input.value)
+            category=str(self.category_input.value)
             if type not in ["收入","支出"]:
-                await interaction.followup.send("輸入的類型錯誤",ephemeral=False)
-                
-                
+                await interaction.followup.send("輸入的收支類型錯誤",ephemeral=False)
+                return
+            if category not in ["食","衣","住","行","育","樂","薪水","其他收入"]:
+                await interaction.followup.send("輸入的詳細類型錯誤",ephemeral=False)
+                return
             # 從 parent_view 獲取登入使用者的 user_id
-            user_id = self.parent_view.user_id 
+            user_id = self.parent_view.user_id
             if user_id is None:
                 user_id = str(interaction.user.id)
 
             today = datetime.date.today()
 
-            db.add_record(user_id,today,item,amount,type)
+            db.add_record(user_id,today,item,amount,type,category)
             await interaction.followup.send("已計入帳本",ephemeral=False)
         except ValueError:
             await interaction.followup.send("請輸入有效數字",ephemeral=False)
@@ -83,10 +98,10 @@ class search_records_embed():
         embed = Embed(title="📒 記帳紀錄")
 
         for r in rows:
-            id, user_id, today, item, amount, category = r
+            id, user_id, today, item, amount, type, category = r
             embed.add_field(
-                name=f"ID: {id}",
-                value=f"📅 {today}\n📌 {item}\n💵 {amount}\n🔖 {category}",
+                name=f"ID: {id} 📅 {today}",
+                value=f"📌 {item} 💵 {amount} 💰 {type}  🔖{category}",
                 inline=False
             )
         return embed
@@ -103,44 +118,60 @@ class edit_record_modal(Modal):
             label="第＿筆記錄 ",
             placeholder='例如：1,2,...,100',
             max_length=50,
-            required=True
+            required=True,
+            row=0
         )
         # 這是輸入「項目」的欄位
         self.item_input=InputText(
             label="項目名稱 ",
             placeholder='例如：午餐、薪水',
             max_length=50,
-            required=True
+            required=True,
+            row=1
         )
         # 這是輸入「金額」的欄位
         self.amount_input = InputText(
             label='金額 (請輸入數字)',
             placeholder='例如：100',
-            required=True
+            required=True,
+            row=2
         )
         # 這是選擇「收支類型」的欄位
         self.type_input = InputText(
             label='收支類型',
             placeholder='輸入：收入 或 支出',
             required=True,
-            max_length=2
+            max_length=5,
+            row=3
+        )
+        # 這是選擇「詳細類型」的欄位
+        self.category_input = InputText(
+            label='詳細類型',
+            placeholder='輸入：食、衣、住、行、育、樂、薪水、額外收入',
+            required=True,
+            max_length=5,
+            row=4
         )
         #將上面的輸入框用add_item放上
         self.add_item(self.id_input)
         self.add_item(self.item_input)
         self.add_item(self.amount_input)
         self.add_item(self.type_input)
+        self.add_item(self.category_input)
+
     async def callback(self,interaction:discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         try:
             id=self.id_input.value
-            user_id=self.parent_view
-            item=self.item_input.value
-            amount=self.amount_input.value
-            type=self.type_input.value
+            print(id)
+            user_id=self.parent_view.user_id
+            item=str(self.item_input.value)
+            amount=int(self.amount_input.value)
+            type=str(self.type_input.value)
+            category=str(self.category_input.value)
 
-            db.edit_record(id,user_id,item,amount,type)
-            await interaction.response.send_message(f"已修改第{id}筆記錄")
+            db.edit_record(id,user_id,item,amount,type,category)
+            await interaction.followup.send(f"已修改第{id}筆記錄")
         except ValueError:
             await interaction.followup.send("請輸入有效數字",ephemeral=False)
         except Exception as e:
@@ -197,7 +228,7 @@ class profile_embed():
 
             embed.add_field(
                 name=f"ID: {id}",
-                value=f"👤 {discord_id}\n🔐 {password_hash}\n {emoji} {is_setup}",
+                value=f"👤 {discord_id}\n🔐 {password_hash}\n{emoji} {is_setup}",
                 inline=False
             )
         return embed

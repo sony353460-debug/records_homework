@@ -14,15 +14,17 @@ class recordDB:#資料庫的類別
     def init_db(self):
         conn=self.connect()
         cursor=conn.cursor()
-        #生成records資料表
+        #生成records資料表(紀錄記帳資料用的)
         cursor.execute("""CREATE TABLE IF NOT EXISTS records (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         user_id TEXT,
                         today TEXT,
                         item TEXT,
                         amount INTEGER,
-                        type TEXT
+                        type TEXT,
+                        category TEXT
                         )""")
+        #生成users資料表(記錄使用者資訊用的)
         cursor.execute("""CREATE TABLE IF NOT EXISTS users (
                         discord_id TEXT PRIMARY KEY,
                         password_hash TEXT NOT NULL,
@@ -66,11 +68,13 @@ class recordDB:#資料庫的類別
         return profile_data
 
     #新增資料到資料表
-    def add_record(self,user_id,today,item,amount,type):
+    def add_record(self,user_id,today,item,amount,type,category):
         conn=self.connect()
         cursor=conn.cursor()
+        print(123)
         #執行sqlite語法
-        cursor.execute("INSERT INTO records (user_id,today,item,amount,type) VALUES(?,?,?,?,?)",(user_id,today,item,amount,type))
+        cursor.execute("INSERT INTO records (user_id,today,item,amount,type,category) VALUES(?,?,?,?,?,?)",(user_id,today,item,amount,type,category))
+        print(123)
         conn.commit()
         conn.close()
 
@@ -84,14 +88,15 @@ class recordDB:#資料庫的類別
         return rows
     
     #修改某一筆資料的內容
-    def edit_record(self,id,user_id,item,amount):
+    def edit_record(self,id,user_id,item,amount,type,category):
         conn=self.connect()
         cursor=conn.cursor()
         cursor.execute("SELECT user_id FROM records WHERE id=(?)",(id,))
         x=cursor.fetchone()
         print(x[0])
+        print(user_id)
         if x[0]==user_id:
-            cursor.execute("UPDATE records SET item=?,amount=? WHERE id=?",(item,amount,id,))
+            cursor.execute("UPDATE records SET item=?,amount=?,type=?,category=? WHERE id=?",(item,amount,type,category,id,))
             print("成功")
         else:
             print("失敗")
