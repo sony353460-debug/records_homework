@@ -199,7 +199,7 @@ class delete_record_modal(Modal):
         try:
             id=self.id_input.value
             db.delete_record(id)
-            await interaction.followup.send(f"已修改第{id}筆記錄")
+            await interaction.followup.send(f"已刪除第{id}筆記錄")
         except ValueError:
             await interaction.followup.send("請輸入有效數字",ephemeral=False)
         except Exception as e:
