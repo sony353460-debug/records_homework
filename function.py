@@ -1,18 +1,23 @@
+#py-cord套件
 import discord
 from discord.commands import slash_command #斜線指令套件
 from discord.commands import Option #選單套件
 from discord import Embed
-from discord.ui import Modal, InputText, View
+from discord.ui import Modal,InputText,View
 #導入資料庫程式
 from database import recordDB
-
+#圖表分析套件
+import matplotlib.pyplot as plt
+#時間套件
 import datetime
 from datetime import date
+
+plt.rcParams['font.family'] = 'Microsoft JhengHei'#預設圖表中的字體，否則會出現方框
 
 db=recordDB()
 
 #/////////////////////////////////////////////////////////////////////////
-#新增
+#新增紀錄
 #/////////////////////////////////////////////////////////////////////////
 class add_record_modal(Modal):
     #這得*args跟**kwargs是為了將資料完整傳給父類別
@@ -34,7 +39,7 @@ class add_record_modal(Modal):
             required=True,
             row=1
         )
-        # 這是選擇「收支類型」的下拉選單 (這裡用 TextInput 暫代，實際可用 Select)
+        # 這是選擇「收支類型」的欄位
         self.type_input = InputText(
             label="收支類型",
             placeholder="輸入：收入 或 支出",
@@ -42,10 +47,10 @@ class add_record_modal(Modal):
             max_length=5,
             row=2
         )
-        # 這是選擇「詳細類型」的下拉選單 (這裡用 TextInput 暫代，實際可用 Select)
+        # 這是選擇「詳細類型」的欄位
         self.category_input = InputText(
             label="詳細類型",
-            placeholder="輸入：食、衣、住、行、育、樂、薪水、額外收入",
+            placeholder="輸入：食、衣、住、行、育、樂、薪水、其他收入",
             required=True,
             max_length=5,
             row=3
@@ -86,7 +91,7 @@ class add_record_modal(Modal):
             await interaction.followup.send(f"發生錯誤：{e}",ephemeral=False)
 
 #/////////////////////////////////////////////////////////////////////////
-#查詢
+#查詢紀錄
 #/////////////////////////////////////////////////////////////////////////
 class search_records_embed():
     def __init__(self,parent_view):
@@ -98,7 +103,7 @@ class search_records_embed():
         embed = Embed(title="📒 記帳紀錄")
 
         for r in rows:
-            id, user_id, today, item, amount, type, category = r
+            id,user_id,today,item,amount,type,category=r
             embed.add_field(
                 name=f"ID: {id} 📅 {today}",
                 value=f"📌 {item} 💵 {amount} 💰 {type}  🔖{category}",
@@ -107,11 +112,11 @@ class search_records_embed():
         return embed
 
 #/////////////////////////////////////////////////////////////////////////
-#修改
+#修改紀錄
 #/////////////////////////////////////////////////////////////////////////
 class edit_record_modal(Modal):
-    def __init__(self, parent_view, *args, **kwargs):
-        super().__init__(*args, **kwargs, title="修改消費紀錄")
+    def __init__(self,parent_view,*args,**kwargs):
+        super().__init__(*args,**kwargs,title="修改消費紀錄")
         self.parent_view=parent_view
         # 這是輸入要修改的id
         self.id_input=InputText(
@@ -130,14 +135,14 @@ class edit_record_modal(Modal):
             row=1
         )
         # 這是輸入「金額」的欄位
-        self.amount_input = InputText(
+        self.amount_input=InputText(
             label='金額 (請輸入數字)',
             placeholder='例如：100',
             required=True,
             row=2
         )
         # 這是選擇「收支類型」的欄位
-        self.type_input = InputText(
+        self.type_input=InputText(
             label='收支類型',
             placeholder='輸入：收入 或 支出',
             required=True,
@@ -145,7 +150,7 @@ class edit_record_modal(Modal):
             row=3
         )
         # 這是選擇「詳細類型」的欄位
-        self.category_input = InputText(
+        self.category_input=InputText(
             label='詳細類型',
             placeholder='輸入：食、衣、住、行、育、樂、薪水、額外收入',
             required=True,
@@ -178,11 +183,11 @@ class edit_record_modal(Modal):
             await interaction.followup.send(f"發生錯誤：{e}",ephemeral=False)
 
 #/////////////////////////////////////////////////////////////////////////
-#刪除
+#刪除紀錄
 #/////////////////////////////////////////////////////////////////////////
 class delete_record_modal(Modal):
-    def __init__(self, parent_view, *args, **kwargs):
-        super().__init__(*args, **kwargs, title="刪除消費紀錄")
+    def __init__(self,parent_view,*args,**kwargs):
+        super().__init__(*args,**kwargs,title="刪除消費紀錄")
         self.parent_view=parent_view
         # 這是輸入要刪除的id
         self.id_input=InputText(
@@ -206,7 +211,7 @@ class delete_record_modal(Modal):
             await interaction.followup.send(f"發生錯誤：{e}",ephemeral=False)
 
 #/////////////////////////////////////////////////////////////////////////
-#個資
+#個人資料
 #/////////////////////////////////////////////////////////////////////////
 class profile_embed():
     def __init__(self,parent_view):
@@ -217,8 +222,8 @@ class profile_embed():
         # 表頭
         embed = Embed(title="🪪 個人資料")
 
-        for r in profile_data:
-            discord_id,password_hash,is_setup = r
+        for i in profile_data:
+            discord_id,password_hash,is_setup=i
             if is_setup==1:
                 emoji="🟢"
                 is_setup="已註冊"
@@ -232,5 +237,117 @@ class profile_embed():
                 inline=False
             )
         return embed
+#/////////////////////////////////////////////////////////////////////////
+#圖表分析
+#/////////////////////////////////////////////////////////////////////////
+class chart_analysis():
+    def __init__(self,parent_view):
+        self.parent_view=parent_view
+        #收入
+        self.income={"收入":0,"薪水":0,"其他收入":0}
+        #支出
+        self.expense={"支出":0,"食":0,"衣":0,"住":0,"行":0,"育":0,"樂":0}
+        #總金額
+        self.total=0
+        #紀錄有哪些分類有金額(以利後續圖表分析)
+        self.tatal_state=[0,0,0,0,0,0,0,0,0,0]#照順序紀錄下列的紀錄
 
+        self.filter_income=[]
+        self.filter_expense=[]
 
+    #抓取資料並做出初步的整理
+    def get_data(self):
+        user_id=self.parent_view.user_id
+        analysis_data=db.search_now_month_records(user_id)
+        for data in analysis_data:
+            id,user_id,today,item,amount,type,category=data[0]
+            #記收入
+            if type=="收入":
+                self.income["收入"]+=amount
+                self.tatal_state[0]=1
+                if category=="薪水":
+                    self.income["薪水"]+=amount
+                    self.tatal_state[1]=1
+                if category=="其他收入":
+                    self.income["其他收入"]+=amount
+                    self.tatal_state[2]=1
+            #記支出
+            if type=="支出":
+                self.expense["支出"]+=amount
+                self.tatal_state[3]=1
+                if category=="食":
+                    self.expense["食"]+=amount
+                    self.tatal_state[4]=1
+                if category=="衣":
+                    self.expense["衣"]+=amount
+                    self.tatal_state[5]=1
+                if category=="住":
+                    self.expense["住"]+=amount
+                    self.tatal_state[6]=1
+                if category=="行":
+                    self.expense["行"]+=amount
+                    self.tatal_state[7]=1
+                if category=="育":
+                    self.expense["育"]+=amount
+                    self.tatal_state[8]=1
+                if category=="樂":
+                    self.expense["樂"]+=amount
+                    self.tatal_state[9]=1
+
+    #整粒資料
+    def analysis_data(self):
+        self.get_data()#先抓取原始資料
+        # self.total=self.income+self.expense
+
+    #生成圖表
+    def creat_chart(self):
+        self.analysis_data()#先抓取整理後的資料
+        try:
+            self.filter_income=dict([(k,v) for k,v in zip(self.income.keys(),self.income.values()) if v>0])
+            plt.title("收入分析")
+            plt.pie(list(self.filter_income.values())[1:],radius=1,labels=list(self.filter_income.keys())[1:])
+            plt.savefig("income.png")
+            file_income=discord.File("income.png")
+            embed_income=discord.Embed(title="收入圖表")
+            embed_income.set_image(url="attachment://income.png")
+            plt.close()
+        except:
+            print(1)
+        try:
+            self.filter_expense=dict([(k,v) for k,v in zip(self.expense.keys(),self.expense.values()) if v>0])
+            plt.title("支出分析")
+            plt.pie(list(self.filter_expense.values())[1:],radius=1,labels=list(self.filter_expense.keys())[1:])
+            plt.savefig("expense.png")
+            file_expense=discord.File("expense.png")
+            embed_expense=discord.Embed(title="支出圖表")
+            embed_expense.set_image(url="attachment://expense.png")
+            plt.close()
+        except:
+            print(2)
+
+        return file_income,embed_income,file_expense,embed_expense
+
+#/////////////////////////////////////////////////////////////////////////
+#目標預算
+#/////////////////////////////////////////////////////////////////////////
+class target_modal(Modal):
+    #這得*args跟**kwargs是為了將資料完整傳給父類別
+    def __init__(self, parent_view, *args, **kwargs):
+        super().__init__(*args, **kwargs, title="設立目標預算")
+        self.parent_view=parent_view
+        # 這是輸入「目標預算」的欄位
+        self.target_input=InputText(
+            label="本月預算多少",
+            placeholder="例如：6000,10000",
+            max_length=50,
+            required=True,
+            row=0
+        )
+        self.add_item(self.target_input)
+    async def callback(self,interaction:discord.Interaction):
+        try:
+            target=int(self.target_input.value)
+            db.add_target(target)
+        except:
+            pass
+        await interaction.response.send_message("已成功設立目標預算")

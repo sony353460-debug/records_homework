@@ -1,0 +1,188 @@
+#//////////////////////////
+#main.py的內容
+#//////////////////////////
+
+'''
+#登入後的選單
+class menu(discord.ui.View):
+    def __init__(self,user_id=None):
+        super().__init__(timeout=None)
+        self.user_id=user_id if user_id is not None else None
+
+        self.custom_id = menu.__qualname__
+
+        #self.add_item是產生按鈕的語法
+        self.add_item(discord.ui.Button(label="新增紀錄",custom_id="action_add",style=discord.ButtonStyle.green,row=0))
+        self.add_item(discord.ui.Button(label="查詢紀錄",custom_id="action_search",style=discord.ButtonStyle.grey,row=0))
+        self.add_item(discord.ui.Button(label="修改紀錄",custom_id="action_edit",style=discord.ButtonStyle.blurple,row=0))
+        self.add_item(discord.ui.Button(label="刪除紀錄",custom_id="action_delete",style=discord.ButtonStyle.red,row=1))
+        self.add_item(discord.ui.Button(label="圖表分析",custom_id="action_analyze",style=discord.ButtonStyle.green,row=1))
+        self.add_item(discord.ui.Button(label="登出系統",custom_id="action_signout",style=discord.ButtonStyle.green,row=1))
+        
+            
+    #當按鈕被按下
+    async def interaction_check(self,interaction:discord.Interaction):
+        custom_id=interaction.data["custom_id"]
+        print(logged_in_users)
+        print(str(interaction.user.id),self.user_id)
+        # 🎯 檢查操作者是否為本人
+        if str(interaction.user.id) != self.user_id:
+            await interaction.response.send_message("你不能操作別人的選單。", ephemeral=True)
+            return
+        #判斷按下的是哪個按鈕，以進入該功能
+        if custom_id=="action_add":
+            await interaction.response.send_modal(add_record_modal(parent_view=self))
+        elif custom_id=="action_search":
+            embed=search_records_embed(parent_view=self).get_embed()
+            await interaction.response.send_message(content="查詢結果：",embed=embed,view=BackView(parent_view=self),ephemeral=False)  # ← 清除原本按鈕，提供返回鍵
+        elif custom_id=="action_edit":
+            await interaction.response.send_modal(edit_record_modal(parent_view=self))
+        elif custom_id=="action_delete":
+            await interaction.followup.send(delete_record_modal(title="刪除記帳記錄", parent_view=self))
+        elif custom_id=="action_analyze":
+            await interaction.followup.send("圖表分析功能即將推出...", ephemeral=True)
+        elif custom_id=="action_signout":
+            logged_in_users[self.user_id]=False
+            await interaction.followup.edit_message(content="**✅ 成功登出！** 請使用 `/登入` 再次操作。", view=None)
+
+#返回選單的按鈕
+class BackView(discord.ui.View):
+    def __init__(self, parent_view: discord.ui.View):
+        super().__init__(timeout=None)
+        self.parent_view = parent_view
+
+    @discord.ui.button(label="返回主選單", style=discord.ButtonStyle.primary)
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="主選單：",view=self.parent_view)       # ← 回到原本選單
+'''
+
+
+# #新增消費功能
+# @bot.slash_command(name="新增",description="新增消費")
+# async def add_cost(ctx,item,amount,type: Option(str, "選擇收支類型", choices=["收入", "支出"])):#我也不知道為甚麼會有黃色波浪號，但能跑就行
+#     await ctx.defer()   # 🔥 告訴 Discord：我在處理中
+#     user_id = str(ctx.author.id)
+#     today = datetime.date.today()
+#     db.add_record(user_id,today,item,amount,type)
+#     await ctx.respond("成功記入帳本")
+
+# #查詢帳本功能
+# @bot.slash_command(name="查詢",description="查詢帳本")
+# async def search_records(ctx):
+#     user_id=str(ctx.author.id)
+#     rows=db.search_records(user_id)
+#     # 表頭
+#     embed = Embed(title="📒 記帳紀錄")
+
+#     for r in rows:
+#         id, user_id, today, item, amount, category = r
+#         embed.add_field(
+#             name=f"ID: {id}",
+#             value=f"📅 {today}\n📌 {item}\n💵 {amount}\n🔖 {category}",
+#             inline=False
+#         )
+#     await ctx.respond(embed=embed)   # 用 code block 固定寬度
+
+# #修改帳本功能
+# @bot.slash_command(name="修改",description="修改帳本")
+# async def edit_record(ctx,id,item,amount):
+#     user_id=str(ctx.author.id)
+#     db.edit_record(id,user_id,item,amount)
+#     await ctx.respond(f"已修改第{id}筆記錄")
+
+# #生成消費分析圖表
+
+
+
+# #機器人(練習)
+# @bot.event
+# async def on_message(message):#定義
+#     if message.author==bot.user:#偵測到的訊息來源等於機器人本身則跳出，避免bug
+#         return
+#     if message.content=="hellow":#偵測訊息內容是否符合
+#         await message.channel.send("hi")
+#     if message.content.startswith("測試"):#偵測內容開頭是否符合
+#         await message.channel.send("測試成功")
+# #機器人(練習)
+# @bot.event
+# async def on_member_join(member):
+#     channel_id=1442521104315846838
+#     welcome_channel=bot.get(channel_id)
+#     await welcome_channel.send(f"歡迎{member.mention}加入伺服器")
+
+
+
+#//////////////////////////
+#database.py的內容
+#//////////////////////////
+
+
+# import psycopg2 #postgres的寫法
+# import os
+# from dotenv import load_dotenv
+
+# load_dotenv()
+
+# class recordDB:#資料庫的類別
+#     #設定這個類別的屬性
+#     def __init__(self,db_url=os.environ.get("DATABASE_URL")):
+#         self.db_url=db_url
+#         self.init_db()
+#     #開始設定方法
+#     #依物件的名稱建立sqlite連線
+#     def connect(self):
+#         return psycopg2.connect(self.db_url)
+#     #建立資料表
+#     def init_db(self):
+#         conn=self.connect()
+#         cursor=conn.cursor()
+#         #執行sqlite語法(splite的依序給key是用INTEGER)
+#         cursor.execute("""CREATE TABLE IF NOT EXISTS records (
+#                         id SERIAL PRIMARY KEY,
+#                         user_id TEXT,
+#                         today DATE,
+#                         item TEXT,
+#                         amount INTEGER,
+#                         type TEXT
+#                         )""")
+#         conn.commit()
+#         conn.close()
+#     #新增資料到資料表
+#     def add_record(self,user_id,today,item,amount,type):
+#         conn=self.connect()
+#         cursor=conn.cursor()
+#         #執行sqlite語法(splite用?,psycopg2用%s)
+#         cursor.execute("INSERT INTO records (user_id,today,item,amount,type) VALUES(%s,%s,%s,%s,%s)",(user_id,today,item,amount,type))
+#         conn.commit()
+#         conn.close()
+#     #查詢使用者的所有資料
+#     def search_records(self,user_id):
+#         conn=self.connect()
+#         cursor=conn.cursor()
+#         cursor.execute("SELECT * FROM records WHERE user_id=(%s)",(user_id,))
+#         rows=cursor.fetchall()
+#         conn.close()
+
+        
+#         return rows
+#     #修改某一筆資料的內容(感覺有點難之後再做)
+#     def edit_record(self,id,user_id,item,amount):
+#         conn=self.connect()
+#         cursor=conn.cursor()
+#         cursor.execute("SELECT user_id FROM records WHERE id=(%s)",(id,))
+#         x=cursor.fetchone()
+#         print(x[0])
+#         if x[0]==user_id:
+#             cursor.execute("UPDATE records SET item=%s,amount=%s WHERE id=%s",(item,amount,id,))
+#             print("成功")
+#         else:
+#             print("失敗")
+#         conn.commit()
+#         conn.close()
+#     #刪除某一筆特定資料
+#     def delete_record(self,id):
+#         conn=self.connect()
+#         cursor=conn.cursor()
+#         cursor.execute("DELETE FROM records WHERE id=(%s)",(id,))
+#         conn.commit()
+#         conn.close()
