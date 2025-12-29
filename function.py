@@ -379,8 +379,7 @@ class target_modal(Modal):
         self.add_item(self.target_input)
     async def callback(self,interaction:discord.Interaction):
         try:
-            target=int(self.target_input.value)
-            db.add_target(target)
+            db.add_target(int(self.target_input.value),self.parent_view.user_id)
         except:
             pass
         await interaction.response.send_message("已成功設立目標預算")

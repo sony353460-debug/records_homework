@@ -1,6 +1,9 @@
 #splite語法的寫法
 import sqlite3
 
+import datetime
+from datetime import date
+
 class recordDB:#資料庫的類別
     #設定這個類別的屬性
     def __init__(self,db_name="records.db"):
@@ -29,7 +32,7 @@ class recordDB:#資料庫的類別
                         discord_id TEXT PRIMARY KEY,
                         password_hash TEXT NOT NULL,
                         is_setup INTEGER DEFAULT 0,
-                        target INTEGER
+                        target INTEGER DEFAULT 0
                         )""")
 
         conn.commit()
@@ -90,6 +93,7 @@ class recordDB:#資料庫的類別
     
     #查詢使用者當月的花費資料
     def search_now_month_records(self,user_id):
+        current_month = datetime.date.today().strftime("%m")
         now_month_records_list=[]
         rows=[]
         conn=self.connect()
@@ -97,7 +101,7 @@ class recordDB:#資料庫的類別
         cursor.execute("SELECT id,today FROM records WHERE user_id=(?)",(user_id,))
         data=cursor.fetchall()
         for i,j in data:
-            if j.split("-")[1]==j.split("-")[1]:
+            if current_month==j.split("-")[1]:
                 now_month_records_list.append(i)
         for i in now_month_records_list:
             cursor.execute("SELECT * FROM records WHERE id=(?)",(i,))
@@ -133,7 +137,7 @@ class recordDB:#資料庫的類別
     def add_target(self,target,discord_id):
         conn=self.connect()
         cursor=conn.cursor()
-        cursor.execute("UPDATE users SET targer=? WHERE=discord_id?",(target,discord_id,))
+        cursor.execute("UPDATE users SET target=? WHERE discord_id=?",(target,discord_id,))
         conn.commit()
         conn.close()
 
@@ -144,10 +148,14 @@ class recordDB:#資料庫的類別
         cursor.execute("SELECT target FROM users WHERE discord_id=?",(discord_id,))
         target_data=cursor.fetchone()[0]
         conn.close()
+        print(target_data)
         return target_data
 
     #查詢所有使用者id
     def get_all_users(self):
-        self.cursor.execute("SELECT DISTINCT discord_id FROM users")
-        return [row[0] for row in self.cursor.fetchall()]
-
+        conn = self.connect()
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT discord_id FROM users")
+        rows = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return rows
