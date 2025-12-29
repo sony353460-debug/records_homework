@@ -99,9 +99,8 @@ class search_records_embed():
     def get_embed(self):
         user_id=self.parent_view.user_id
         rows=db.search_records(user_id)
-        # 表頭
+        #查詢出的資料
         embed = Embed(title="📒 記帳紀錄")
-
         for r in rows:
             id,user_id,today,item,amount,type,category=r
             embed.add_field(
@@ -302,6 +301,30 @@ class chart_analysis():
     #生成圖表
     def creat_chart(self):
         self.analysis_data()#先抓取整理後的資料
+        discord_id=self.parent_view.user_id
+        #收支建議
+        balance=self.income["收入"]-self.expense["支出"]
+        expense_items=list(self.expense.items())
+        max_data=dict(expense_items[1:])
+        advice_text_ie=""
+        if balance>0:
+            advice_text_ie=f"🎉 太棒了！本月目前結餘 **{balance}** 元。\n繼續保持，可以考慮將多餘資金存入儲蓄！"
+        elif balance==0:
+            advice_text_ie="⚖️ 收支平衡！\n雖然沒有超支，但也沒存到錢，下個月加油！"
+        else:
+            advice_text_ie=f"⚠️ 注意！本月已經超支 **{abs(balance)}** 元了！\n建議檢視「{max(max_data,key=max_data.get)}」類別的花費，減少不必要的支出。"
+        
+        #目標預算建議
+        target=db.search_target(discord_id)
+        advice_text_target=""
+        if target>self.expense["支出"]:
+            advice_text_target=f"🎉 恭喜！近期花費成功控制在 **{target}** 元以內。請繼續保持，注意還有多少於預算可用！"
+        elif target==self.expense["支出"]:
+            advice_text_target=f"🚫 已達預算上限，請賺多一點錢或節省開銷！"
+        else:
+            advice_text_target=f"⚠️ 花費已超出預算，請注意「{max(max_data,key=max_data.get)}」這方面的支出！"
+        embed_advice=discord.Embed(title="財務分析建議",description=f"收支建議\n{advice_text_ie}\n\n\n目標預算建議\n{advice_text_target}",color=discord.Color.gold())
+
         try:
             self.filter_income=dict([(k,v) for k,v in zip(self.income.keys(),self.income.values()) if v>0])
             plt.title("收入分析")
@@ -320,12 +343,16 @@ class chart_analysis():
             plt.savefig("expense.png")
             file_expense=discord.File("expense.png")
             embed_expense=discord.Embed(title="支出圖表")
+            # if self.expense["支出"]>db.search_target(discord_id):
+            #     embed_expense.add_field(name="財務建議：目前已超出預算")
+            # else:
+            #     embed_expense.add_field(name="財務建議：目前沒超出預算")
             embed_expense.set_image(url="attachment://expense.png")
             plt.close()
         except:
             print(2)
 
-        return file_income,embed_income,file_expense,embed_expense
+        return file_income,embed_income,file_expense,embed_expense,embed_advice
 
 #/////////////////////////////////////////////////////////////////////////
 #目標預算

@@ -92,9 +92,9 @@ class menu(discord.ui.View):
 
     @discord.ui.button(label="圖表分析", emoji="📊", custom_id="chart_analysis", style=discord.ButtonStyle.grey, row=1)
     async def analyze(self, button, interaction):
-        file_income,embed_income,file_expense,embed_expense,=chart_analysis(parent_view=self).creat_chart()
+        file_income,embed_income,file_expense,embed_expense,embed_advice=chart_analysis(parent_view=self).creat_chart()
         await interaction.response.defer()
-        await interaction.edit_original_message(content="圖表分析",files=[file_income,file_expense],embeds=[embed_income,embed_expense],view=BackView(self))
+        await interaction.edit_original_message(content="圖表分析",files=[file_income,file_expense],embeds=[embed_advice,embed_income,embed_expense],view=BackView(self))
 
     @discord.ui.button(label="目標預算", emoji="🎯", custom_id="action_target", style=discord.ButtonStyle.blurple, row=1)
     async def password(self, button, interaction):

@@ -130,13 +130,21 @@ class recordDB:#資料庫的類別
         conn.close()
 
     #新增目標預算
-    def add_target(self,target):
+    def add_target(self,target,discord_id):
         conn=self.connect()
         cursor=conn.cursor()
-        cursor.execute("UPDATA users SET targer=?"(target))
+        cursor.execute("UPDATE users SET targer=? WHERE=discord_id?",(target,discord_id,))
         conn.commit()
         conn.close()
 
+    #查詢目標預算
+    def search_target(self,discord_id):
+        conn=self.connect()
+        cursor=conn.cursor()
+        cursor.execute("SELECT target FROM users WHERE discord_id=?",(discord_id,))
+        target_data=cursor.fetchone()[0]
+        conn.close()
+        return target_data
 
 
 
