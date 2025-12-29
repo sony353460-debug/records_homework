@@ -8,6 +8,7 @@ from discord.ui import Modal,InputText,View
 from database import recordDB
 #圖表分析套件
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm # 引入字體管理
 #時間套件
 import datetime
 from datetime import date
@@ -302,6 +303,11 @@ class chart_analysis():
     def creat_chart(self):
         self.analysis_data()#先抓取整理後的資料
         discord_id=self.parent_view.user_id
+
+        #設定字體
+        font_path='微軟正黑體-1.ttf'
+        my_font = fm.FontProperties(fname=font_path)
+
         #收支建議
         balance=self.income["收入"]-self.expense["支出"]
         expense_items=list(self.expense.items())
@@ -327,8 +333,8 @@ class chart_analysis():
 
         try:
             self.filter_income=dict([(k,v) for k,v in zip(self.income.keys(),self.income.values()) if v>0])
-            plt.title("收入分析")
-            plt.pie(list(self.filter_income.values())[1:],radius=1,labels=list(self.filter_income.keys())[1:])
+            plt.title("收入分析",fontproperties=my_font)
+            plt.pie(list(self.filter_income.values())[1:],radius=1,labels=list(self.filter_income.keys())[1:],textprops={'fontproperties': my_font})
             plt.savefig("income.png")
             file_income=discord.File("income.png")
             embed_income=discord.Embed(title="收入圖表")
@@ -338,8 +344,8 @@ class chart_analysis():
             print(1)
         try:
             self.filter_expense=dict([(k,v) for k,v in zip(self.expense.keys(),self.expense.values()) if v>0])
-            plt.title("支出分析")
-            plt.pie(list(self.filter_expense.values())[1:],radius=1,labels=list(self.filter_expense.keys())[1:])
+            plt.title("支出分析",fontproperties=my_font)
+            plt.pie(list(self.filter_expense.values())[1:],radius=1,labels=list(self.filter_expense.keys())[1:],textprops={'fontproperties': my_font})
             plt.savefig("expense.png")
             file_expense=discord.File("expense.png")
             embed_expense=discord.Embed(title="支出圖表")
