@@ -146,5 +146,8 @@ class recordDB:#資料庫的類別
         conn.close()
         return target_data
 
-
+    #查詢所有使用者id
+    def get_all_users(self):
+        self.cursor.execute("SELECT DISTINCT discord_id FROM users")
+        return [row[0] for row in self.cursor.fetchall()]
 

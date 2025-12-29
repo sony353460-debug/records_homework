@@ -222,7 +222,7 @@ class profile_embed():
         embed = Embed(title="🪪 個人資料")
 
         for i in profile_data:
-            discord_id,password_hash,is_setup=i
+            discord_id,password_hash,is_setup,target=i
             if is_setup==1:
                 emoji="🟢"
                 is_setup="已註冊"
@@ -232,7 +232,7 @@ class profile_embed():
 
             embed.add_field(
                 name=f"ID: {id}",
-                value=f"👤 {discord_id}\n🔐 {password_hash}\n{emoji} {is_setup}",
+                value=f"👤 {discord_id}\n🔐 {password_hash}\n{emoji} {is_setup}\n",
                 inline=False
             )
         return embed

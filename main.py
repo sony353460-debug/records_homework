@@ -121,5 +121,7 @@ class BackView(discord.ui.View):
     async def back(self, button: discord.ui.Button, interaction: discord.Interaction):
         await interaction.response.edit_message(content="主選單：",attachments=[],embeds=[],view=self.parent_view)       # ← 回到原本選單
 
+#載入偵測月底發送報表功能
+bot.load_extension("report_task")
 
 bot.run(os.environ.get("DISCORD_TOKEN"))
