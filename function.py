@@ -105,7 +105,7 @@ class search_records_embed():
         for r in rows:
             id,user_id,today,item,amount,type,category=r
             embed.add_field(
-                name=f"ID: {id} 📅 {today}",
+                name="ID: {:<20d}  {:>20s}".format(id,"📅 "+today),
                 value=f"📌 {item} 💵 {amount} 💰 {type}  🔖{category}",
                 inline=False
             )
